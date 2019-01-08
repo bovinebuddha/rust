@@ -461,6 +461,10 @@ declare_features! (
 
     // Re-Rebalance coherence
     (active, re_rebalance_coherence, "1.32.0", Some(55437), None),
+
+    // Non-object safe trait objects safe to use but cannot be created in safe rust
+    (active, object_safe_for_dispatch, "1.33.0", Some(43561), None),
+
 );
 
 declare_features! (
