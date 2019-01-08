@@ -173,8 +173,11 @@ fn check_impl_overlap<'a, 'tcx>(tcx: TyCtxt<'a, 'tcx, 'tcx>, node_id: ast::NodeI
 
         if let Some(principal_def_id) = data.principal_def_id() {
             if !tcx.is_object_safe(principal_def_id) {
-                // This is an error, but it will be reported by wfcheck.  Ignore it here.
+                // Without the 'object_safe_for_dispatch' feature this is an error
+                // which will be reported by wfcheck.  Ignore it here.
                 // This is tested by `coherence-impl-trait-for-trait-object-safe.rs`.
+                // With the feature enabled, the trait is not implemented automatically,
+                // so this is valid.
             } else {
                 let mut supertrait_def_ids =
                     traits::supertrait_def_ids(tcx, principal_def_id);
