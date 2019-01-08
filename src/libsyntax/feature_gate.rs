@@ -474,6 +474,9 @@ declare_features! (
 
     // Allows the use of C-variadics
     (active, c_variadic, "1.34.0", Some(44930), None),
+
+    // Non-object safe trait objects safe to use but cannot be created in safe rust
+    (active, object_safe_for_dispatch, "1.34.0", Some(43561), None),
 );
 
 declare_features! (
