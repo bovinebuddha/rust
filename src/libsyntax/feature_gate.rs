@@ -461,6 +461,10 @@ declare_features! (
 
     // #[optimize(X)]
     (active, optimize_attribute, "1.34.0", Some(54882), None),
+
+    // Non-object safe trait objects safe to use but cannot be created in safe rust
+    (active, object_safe_for_dispatch, "1.34.0", Some(43561), None),
+
 );
 
 declare_features! (
