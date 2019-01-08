@@ -58,7 +58,7 @@ use rustc::infer::{Coercion, InferResult, InferOk};
 use rustc::infer::type_variable::TypeVariableOrigin;
 use rustc::traits::{self, ObligationCause, ObligationCauseCode};
 use rustc::ty::adjustment::{Adjustment, Adjust, AllowTwoPhase, AutoBorrow, AutoBorrowMutability};
-use rustc::ty::{self, TypeAndMut, Ty, ClosureSubsts};
+use rustc::ty::{self, TypeAndMut, Ty, ClosureSubsts, Binder, List, ExistentialPredicate};
 use rustc::ty::fold::TypeFoldable;
 use rustc::ty::error::TypeError;
 use rustc::ty::relate::RelateResult;
@@ -555,9 +555,19 @@ impl<'f, 'gcx, 'tcx> Coerce<'f, 'gcx, 'tcx> {
                 ty::Predicate::Trait(ref tr) if traits.contains(&tr.def_id()) => {
                     if unsize_did == tr.def_id() {
                         let sty = &tr.skip_binder().input_types().nth(1).unwrap().sty;
-                        if let ty::Tuple(..) = sty {
-                            debug!("coerce_unsized: found unsized tuple coercion");
-                            has_unsized_tuple_coercion = true;
+                        match sty {
+                            ty::Tuple(..) => {
+                                debug!("coerce_unsized: found unsized tuple coercion");
+                                has_unsized_tuple_coercion = true;
+                            }
+                            ty::Dynamic(data, _) => {
+                                if self.tcx.features().object_safe_for_dispatch {
+                                    self.check_coercion_object_safe(&mut selcx,
+                                                                    tr,
+                                                                    data)?;
+                                }
+                            }
+                            _ => {}
                         }
                     }
                     tr.clone()
@@ -624,6 +634,38 @@ impl<'f, 'gcx, 'tcx> Coerce<'f, 'gcx, 'tcx> {
         }
 
         Ok(coercion)
+    }
+
+    fn check_coercion_object_safe(&self,
+                                  selcx: &mut traits::SelectionContext<'f, 'gcx, 'tcx>,
+                                  pred: &ty::PolyTraitPredicate<'tcx>,
+                                  data: &Binder<&'tcx List<ExistentialPredicate<'tcx>>>)
+                                  -> Result<(), TypeError<'tcx>> {
+
+        let source = &pred.skip_binder().self_ty().sty;
+        match source {
+            ty::Dynamic(..) => Ok(()),
+            _ => {
+                let cause = ObligationCause::misc(self.cause.span, self.body_id);
+                let component_traits =
+                    data.auto_traits().chain(data.principal_def_id());
+                for target_def_id in component_traits {
+                    let obj_safe = traits::Obligation::new(
+                        cause.clone(),
+                        self.fcx.param_env,
+                        ty::Predicate::ObjectSafe(target_def_id)
+                    );
+                    match selcx.select(&obj_safe.with(pred.clone())) {
+                        Ok(_) => (),
+                        Err(err) => {
+                            self.report_selection_error(&obj_safe, &err, false);
+                            return Err(TypeError::Mismatch)
+                        }
+                    }
+                }
+                Ok(())
+            }
+        }
     }
 
     fn coerce_from_safe_fn<F, G>(&self,
