@@ -451,7 +451,8 @@ impl<'a, 'tcx> Lift<'tcx> for ty::error::TypeError<'a> {
             ProjectionMismatched(x) => ProjectionMismatched(x),
             ProjectionBoundsLength(x) => ProjectionBoundsLength(x),
             Sorts(ref x) => return tcx.lift(x).map(Sorts),
-            ExistentialMismatch(ref x) => return tcx.lift(x).map(ExistentialMismatch)
+            ExistentialMismatch(ref x) => return tcx.lift(x).map(ExistentialMismatch),
+            ObjectUnsafeCoercion(defid) => ObjectUnsafeCoercion(defid),
         })
     }
 }
@@ -1059,6 +1060,7 @@ EnumTypeFoldableImpl! {
         (ty::error::TypeError::ProjectionBoundsLength)(x),
         (ty::error::TypeError::Sorts)(x),
         (ty::error::TypeError::ExistentialMismatch)(x),
+        (ty::error::TypeError::ObjectUnsafeCoercion)(x),
     }
 }
 
