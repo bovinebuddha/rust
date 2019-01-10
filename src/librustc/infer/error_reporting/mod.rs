@@ -960,10 +960,17 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
 
         let span = cause.span(&self.tcx);
 
-        diag.span_label(span, terr.to_string());
-        if let Some((sp, msg)) = secondary_span {
-            diag.span_label(sp, msg);
-        }
+        // Ignore msg for object safe coercion
+        // since E0038 message will be printed
+        match terr {
+            TypeError::ObjectUnsafeCoercion(_) => {}
+            _ => {
+                diag.span_label(span, terr.to_string());
+                if let Some((sp, msg)) = secondary_span {
+                    diag.span_label(sp, msg);
+                }
+            }
+        };
 
         if let Some((expected, found)) = expected_found {
             match (terr, is_simple_error, expected == found) {
@@ -975,6 +982,9 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
                         &format!(" ({})", values.expected.sort_string(self.tcx)),
                         &format!(" ({})", values.found.sort_string(self.tcx)),
                     );
+                }
+                (TypeError::ObjectUnsafeCoercion(_), ..) => {
+                    diag.note_unsuccessfull_coercion(found, expected);
                 }
                 (_, false, _) => {
                     if let Some(exp_found) = exp_found {
@@ -1095,6 +1105,11 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
         let span = trace.cause.span(&self.tcx);
         let failure_code = trace.cause.as_failure_code(terr);
         let mut diag = match failure_code {
+            FailureCode::Error0038(did) => {
+                let violations = self.tcx.global_tcx()
+                    .object_safety_violations(did);
+                self.tcx.report_object_safety_error(span, did, violations)
+            }
             FailureCode::Error0317(failure_str) => {
                 struct_span_err!(self.tcx.sess, span, E0317, "{}", failure_str)
             }
@@ -1453,6 +1468,7 @@ impl<'a, 'gcx, 'tcx> InferCtxt<'a, 'gcx, 'tcx> {
 }
 
 enum FailureCode {
+    Error0038(DefId),
     Error0317(&'static str),
     Error0580(&'static str),
     Error0308(&'static str),
@@ -1486,6 +1502,7 @@ impl<'tcx> ObligationCause<'tcx> {
                 TypeError::CyclicTy(ty) if ty.is_closure() || ty.is_generator() => {
                     Error0644("closure/generator type that references itself")
                 }
+                TypeError::ObjectUnsafeCoercion(did) => Error0038(did.clone()),
                 _ => Error0308("mismatched types"),
             },
         }
