@@ -42,6 +42,7 @@ pub enum TypeError<'tcx> {
     ProjectionMismatched(ExpectedFound<DefId>),
     ProjectionBoundsLength(ExpectedFound<usize>),
     ExistentialMismatch(ExpectedFound<&'tcx ty::List<ty::ExistentialPredicate<'tcx>>>),
+    ObjectUnsafeCoercion(DefId),
 }
 
 #[derive(Clone, RustcEncodable, RustcDecodable, PartialEq, Eq, Hash, Debug, Copy)]
@@ -144,6 +145,7 @@ impl<'tcx> fmt::Display for TypeError<'tcx> {
                 report_maybe_different(f, &format!("trait `{}`", values.expected),
                                        &format!("trait `{}`", values.found))
             }
+            ObjectUnsafeCoercion(_) => write!(f, "coercion to object-unsafe trait object"),
         }
     }
 }
