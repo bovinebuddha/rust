@@ -401,20 +401,37 @@ impl<'a, 'gcx, 'tcx> CastCheck<'tcx> {
             self.report_cast_to_unsized_type(fcx);
         } else if self.expr_ty.references_error() || self.cast_ty.references_error() {
             // No sense in giving duplicate error messages
-        } else if self.try_coercion_cast(fcx) {
-            self.trivial_cast_lint(fcx);
-            debug!(" -> CoercionCast");
-            fcx.tables.borrow_mut().cast_kinds_mut().insert(self.expr.hir_id,
-                                                            CastKind::CoercionCast);
         } else {
-            match self.do_check(fcx) {
-                Ok(k) => {
-                    debug!(" -> {:?}", k);
-                    fcx.tables.borrow_mut().cast_kinds_mut().insert(self.expr.hir_id, k);
+            match self.try_coercion_cast(fcx) {
+                Ok(()) => {
+                    self.trivial_cast_lint(fcx);
+                    debug!(" -> CoercionCast");
+                    fcx.tables.borrow_mut().cast_kinds_mut()
+                        .insert(self.expr.hir_id, CastKind::CoercionCast);
                 }
-                Err(e) => self.report_cast_error(fcx, e),
+                Err(ty::error::TypeError::ObjectUnsafeCoercion(did)) => {
+                    self.report_object_unsafe_cast(&fcx, did);
+                }
+                Err(_) => {
+                    match self.do_check(fcx) {
+                        Ok(k) => {
+                            debug!(" -> {:?}", k);
+                            fcx.tables.borrow_mut().cast_kinds_mut()
+                                .insert(self.expr.hir_id, k);
+                        }
+                        Err(e) => self.report_cast_error(fcx, e),
+                    };
+                }
             };
         }
+    }
+
+    fn report_object_unsafe_cast(&self, fcx: &FnCtxt<'a, 'gcx, 'tcx>, did: DefId) {
+        let violations = fcx.tcx.global_tcx().object_safety_violations(did);
+        let mut err = fcx.tcx.report_object_safety_error(self.cast_span, did, violations);
+        err.note(&format!("required by cast to type '{}'",
+                          fcx.ty_to_string(self.cast_ty)));
+        err.emit();
     }
 
     /// Check a cast, and report an error if one exists. In some cases, this
@@ -612,8 +629,12 @@ impl<'a, 'gcx, 'tcx> CastCheck<'tcx> {
         }
     }
 
-    fn try_coercion_cast(&self, fcx: &FnCtxt<'a, 'gcx, 'tcx>) -> bool {
-        fcx.try_coerce(self.expr, self.expr_ty, self.cast_ty, AllowTwoPhase::No).is_ok()
+    fn try_coercion_cast(&self, fcx: &FnCtxt<'a, 'gcx, 'tcx>)
+                         -> Result<(), ty::error::TypeError> {
+        match fcx.try_coerce(self.expr, self.expr_ty, self.cast_ty, AllowTwoPhase::No) {
+            Ok(_) => Ok(()),
+            Err(err) => Err(err),
+        }
     }
 }
 
