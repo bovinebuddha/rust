@@ -186,9 +186,16 @@ impl<'f, 'gcx, 'tcx> Coerce<'f, 'gcx, 'tcx> {
         // a "spurious" type variable, and we don't want to have that
         // type variable in memory if the coercion fails.
         let unsize = self.commit_if_ok(|_| self.coerce_unsized(a, b));
-        if unsize.is_ok() {
-            debug!("coerce: unsize successful");
-            return unsize;
+        match unsize {
+            Ok(_) => {
+                debug!("coerce: unsize successful");
+                return unsize;
+            }
+            Err(TypeError::ObjectUnsafeCoercion(did)) => {
+                debug!("coerce: unsize not object safe");
+                return Err(TypeError::ObjectUnsafeCoercion(did));
+            }
+            Err(_) => {}
         }
         debug!("coerce: unsize failed");
 
@@ -657,9 +664,8 @@ impl<'f, 'gcx, 'tcx> Coerce<'f, 'gcx, 'tcx> {
                     );
                     match selcx.select(&obj_safe.with(pred.clone())) {
                         Ok(_) => (),
-                        Err(err) => {
-                            self.report_selection_error(&obj_safe, &err, false);
-                            return Err(TypeError::Mismatch)
+                        Err(_) => {
+                            return Err(TypeError::ObjectUnsafeCoercion(target_def_id))
                         }
                     }
                 }
