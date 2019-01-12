@@ -1,0 +1,30 @@
+error[E0038]: the trait `Trait` cannot be made into an object
+  --> $DIR/wf-convert-unsafe-trait-obj.rs:16:25
+   |
+LL |     let t: &dyn Trait = &S; //~ ERROR E0038
+   |                         ^^ the trait `Trait` cannot be made into an object
+   |
+   = note: the trait cannot require that `Self : Sized`
+   = note: required when trying to coerce from type `&S` to type '&dyn Trait`
+
+error[E0038]: the trait `Trait` cannot be made into an object
+  --> $DIR/wf-convert-unsafe-trait-obj.rs:17:17
+   |
+LL |     takes_trait(&S); //~ ERROR E0038
+   |                 ^^ the trait `Trait` cannot be made into an object
+   |
+   = note: the trait cannot require that `Self : Sized`
+   = note: required when trying to coerce from type `&S` to type '&dyn Trait`
+
+error[E0038]: the trait `Trait` cannot be made into an object
+  --> $DIR/wf-convert-unsafe-trait-obj.rs:15:11
+   |
+LL |     &S as &dyn Trait; //~ ERROR E0038
+   |           ^^^^^^^^^^ the trait `Trait` cannot be made into an object
+   |
+   = note: the trait cannot require that `Self : Sized`
+   = note: required by cast to type '&dyn Trait'
+
+error: aborting due to 3 previous errors
+
+For more information about this error, try `rustc --explain E0038`.
