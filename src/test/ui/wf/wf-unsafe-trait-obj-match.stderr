@@ -1,0 +1,27 @@
+error[E0308]: match arms have incompatible types
+  --> $DIR/wf-unsafe-trait-obj-match.rs:23:17
+   |
+LL | /     match opt() { //~ ERROR E0308
+LL | |         Some(()) => &S,
+   | |                     -- this is found to be of type `&S`
+LL | |         None => &R,
+   | |                 ^^ expected struct `S`, found struct `R`
+LL | |     }
+   | |_____- `match` arms have incompatible types
+   |
+   = note: expected type `&S`
+              found type `&R`
+
+error[E0038]: the trait `Trait` cannot be made into an object
+  --> $DIR/wf-unsafe-trait-obj-match.rs:26:21
+   |
+LL |         Some(()) => &S,
+   |                     ^^ the trait `Trait` cannot be made into an object
+   |
+   = note: the trait cannot require that `Self : Sized`
+   = note: required when trying to coerce from type `&S` to type '&dyn Trait`
+
+error: aborting due to 2 previous errors
+
+Some errors occurred: E0038, E0308.
+For more information about an error, try `rustc --explain E0038`.
