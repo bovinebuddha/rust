@@ -1,0 +1,15 @@
+error[E0277]: the trait bound `&dyn Trait: Trait` is not satisfied
+  --> $DIR/coherence-unsafe-trait-object-impl.rs:15:5
+   |
+LL |     takes_t(t); //~ ERROR E0277
+   |     ^^^^^^^ the trait `Trait` is not implemented for `&dyn Trait`
+   |
+note: required by `takes_t`
+  --> $DIR/coherence-unsafe-trait-object-impl.rs:10:1
+   |
+LL | fn takes_t<S: Trait>(s: S) {
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+error: aborting due to previous error
+
+For more information about this error, try `rustc --explain E0277`.

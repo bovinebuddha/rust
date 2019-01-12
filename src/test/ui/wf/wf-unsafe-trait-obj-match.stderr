@@ -1,0 +1,29 @@
+error[E0308]: match arms have incompatible types
+  --> $DIR/wf-unsafe-trait-obj-match.rs:21:5
+   |
+LL | /     match opt() { //~ ERROR E0308
+LL | |         Some(()) => &S,
+LL | |         None => &R,
+   | |                 -- match arm with an incompatible type
+LL | |     }
+   | |_____^ expected struct `S`, found struct `R`
+   |
+   = note: expected type `&S`
+              found type `&R`
+
+error[E0308]: match arms have incompatible types
+  --> $DIR/wf-unsafe-trait-obj-match.rs:25:25
+   |
+LL |       let t: &dyn Trait = match opt() { //~ ERROR E0308
+   |  _________________________^
+LL | |         Some(()) => &S,
+   | |                     -- match arm with an incompatible type
+LL | |         None => &R,
+LL | |     };
+   | |_____^
+   |
+   = note: required when trying to coerce from type `&S` to type '&dyn Trait`
+
+error: aborting due to 2 previous errors
+
+For more information about this error, try `rustc --explain E0308`.
