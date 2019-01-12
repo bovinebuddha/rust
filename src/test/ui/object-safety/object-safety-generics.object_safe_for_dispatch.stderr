@@ -1,0 +1,21 @@
+error[E0038]: the trait `Bar` cannot be made into an object
+  --> $DIR/object-safety-generics.rs:20:5
+   |
+LL |     t
+   |     ^ the trait `Bar` cannot be made into an object
+   |
+   = note: method `bar` has generic type parameters
+   = note: required when trying to coerce from type `&T` to type '&dyn Bar`
+
+error[E0038]: the trait `Bar` cannot be made into an object
+  --> $DIR/object-safety-generics.rs:26:10
+   |
+LL |     t as &Bar
+   |          ^^^^ the trait `Bar` cannot be made into an object
+   |
+   = note: method `bar` has generic type parameters
+   = note: required by cast to type '&dyn Bar'
+
+error: aborting due to 2 previous errors
+
+For more information about this error, try `rustc --explain E0038`.
