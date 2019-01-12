@@ -1,0 +1,12 @@
+error[E0038]: the trait `Foo` cannot be made into an object
+  --> $DIR/object-safety-no-static.rs:22:27
+   |
+LL |     let b: Box<dyn Foo> = Box::new(Bar);
+   |                           ^^^^^^^^^^^^^ the trait `Foo` cannot be made into an object
+   |
+   = note: method `foo` has no receiver
+   = note: required when trying to coerce from type `std::boxed::Box<Bar>` to type 'std::boxed::Box<dyn Foo>`
+
+error: aborting due to previous error
+
+For more information about this error, try `rustc --explain E0038`.
